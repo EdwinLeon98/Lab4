@@ -30,12 +30,38 @@ void shminit() {
 
 int shm_open(int id, char **pointer) {
 
-//you write this
+  struct proc *curproc = myproc();
+  uint sz = PGROUNDUP(curproc->sz);
+  int i;
+  bool match = false;
 
+  aquire(&(shm_table.lock));
+  for(i = 0; i < 64; i++){
+	if(shm_table.shm_pages[i].id == id){
+		match = true;
+		mappages(curproc->pgdir, (char *)sz, PGSIZE, V2P(shm_table.shm_pages[i].frame, PTE_W|PTE_U);
+		shm_table.shm_pages[i].refcnt++;
+		break;
+	}
+  }  
 
+  if(match == false){
+	for(i = 0; i < 64; i++){
+		if(shm_table.shm_pages[i].id == 0){
+			shm_table.shm_pages[i].id = id;
+			break;	
+		}
+	}
+	shm_table.shm_pages[i].frame = kmalloc();
+	mappages(curproc->pgdir, (char *)sz, PGSIZE, V2P(shm_table.shm_pages[i].frame, PTE_W|PTE_U);
+        shm_table.shm_pages[i].refcnt++;
+  }
+  
+  //curproc->sz = sz;//Add update to sz
 
-
-return 0; //added to remove compiler warning -- you should decide what to return
+  *pointer = (char *)sz;	
+  release(&(shm_table.lock));
+  return 0; //added to remove compiler warning -- you should decide what to return
 }
 
 
